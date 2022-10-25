@@ -42,7 +42,7 @@ export function decodeCallResult({ abi, functionName, data }) {
   return decoded;
 }
 
-export async function connectWeb3({ chainId = 1 } = {}) {
+export async function connectWeb3({ chainId = 1, provider } = {}) {
   const rpcUrls = {};
   // need to make it look like this:
   // rpc: {
@@ -59,32 +59,40 @@ export async function connectWeb3({ chainId = 1 } = {}) {
     rpcUrls[chainId] = rpcUrl;
   }
 
-  const providerOptions = {
-    walletconnect: {
-      package: WalletConnectProvider, // required
-      options: {
-        infuraId: "cd614bfa5c2f4703b7ab0ec0547d9f81",
-        rpc: rpcUrls,
-        chainId,
+  let web3 = provider;
+
+  if (!provider) {
+    const providerOptions = {
+      walletconnect: {
+        package: WalletConnectProvider, // required
+        options: {
+          infuraId: "cd614bfa5c2f4703b7ab0ec0547d9f81",
+          rpc: rpcUrls,
+          chainId,
+        },
       },
-    },
-  };
+    };
+  
+    log("getting provider via lit connect modal");
+  
+    const dialog = new LitConnectModal({
+      providerOptions,
+    });
 
-  log("getting provider via lit connect modal");
+    provider = await dialog.getWalletProvider();
+  
+    log("got provider", provider);
+  
+    // const provider = await detectEthereumProvider();
+    // const web3 = new Web3Provider(provider);
+    
+    // trigger metamask popup
+    await provider.enable();
+  
+    web3 = new Web3Provider(provider);
+  }
 
-  const dialog = new LitConnectModal({
-    providerOptions,
-  });
-  const provider = await dialog.getWalletProvider();
-
-  log("got provider", provider);
-  const web3 = new Web3Provider(provider);
-
-  // const provider = await detectEthereumProvider();
-  // const web3 = new Web3Provider(provider);
-
-  // trigger metamask popup
-  await provider.enable();
+  log("web3", web3);
 
   log("listing accounts");
   const accounts = await web3.listAccounts();
@@ -166,10 +174,12 @@ export async function checkAndSignEVMAuthMessage({
   chain,
   resources,
   switchChain,
+  customProvider
 }) {
   const selectedChain = LIT_CHAINS[chain];
   const { web3, account } = await connectWeb3({
     chainId: selectedChain.chainId,
+    provider: customProvider,
   });
   log(`got web3 and account: ${account}`);
 

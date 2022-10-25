@@ -45,6 +45,7 @@ export async function checkAndSignAuthMessage({
   chain,
   resources,
   switchChain = true,
+  customProvider
 }) {
   const chainInfo = ALL_LIT_CHAINS[chain];
   if (!chainInfo) {
@@ -58,7 +59,7 @@ export async function checkAndSignAuthMessage({
   }
 
   if (chainInfo.vmType === "EVM") {
-    return checkAndSignEVMAuthMessage({ chain, resources, switchChain });
+    return checkAndSignEVMAuthMessage({ chain, resources, switchChain, customProvider });
   } else if (chainInfo.vmType === "SVM") {
     return checkAndSignSolAuthMessage({ chain });
   } else if (chainInfo.vmType === "CVM") {
